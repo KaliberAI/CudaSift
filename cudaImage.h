@@ -18,7 +18,7 @@ public:
   CudaImage();
   ~CudaImage();
   void Allocate(int width, int height, int pitch, bool withHost, float *devMem = NULL, float *hostMem = NULL);
-  double Download();
+  double Download(bool pinnedMem = false, cudaStream_t stream = nullptr);
   double Readback();
   double InitTexture();
   double CopyToTexture(CudaImage &dst, bool host);

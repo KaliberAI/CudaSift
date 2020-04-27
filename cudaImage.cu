@@ -41,7 +41,7 @@ CudaImage::CudaImage() :
 
 CudaImage::~CudaImage()
 {
-  if (d_internalAlloc && d_data!=NULL) 
+  if (d_internalAlloc && d_data!=NULL)
     safeCall(cudaFree(d_data));
   d_data = NULL;
   if (h_internalAlloc && h_data!=NULL) 
@@ -52,12 +52,18 @@ CudaImage::~CudaImage()
   t_data = NULL;
 }
   
-double CudaImage::Download()  
+double CudaImage::Download(bool pinnedMem, cudaStream_t stream)
 {
   TimerGPU timer(0);
   int p = sizeof(float)*pitch;
-  if (d_data!=NULL && h_data!=NULL) 
-    safeCall(cudaMemcpy2D(d_data, p, h_data, sizeof(float)*width, sizeof(float)*width, height, cudaMemcpyHostToDevice));
+  if (d_data!=NULL && h_data!=NULL) {
+      if (pinnedMem) {
+          safeCall(cudaMemcpy2DAsync(d_data, p, h_data, sizeof(float)*width, sizeof(float)*width, height, cudaMemcpyHostToDevice, stream));
+      } else {
+          safeCall(cudaMemcpy2D(d_data, p, h_data, sizeof(float)*width, sizeof(float)*width, height, cudaMemcpyHostToDevice));
+      }
+  }
+
   double gpuTime = timer.read();
 #ifdef VERBOSE
   printf("Download time =               %.2f ms\n", gpuTime);

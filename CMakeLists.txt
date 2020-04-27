@@ -32,15 +32,19 @@ if (UNIX)
 endif()
 
 set(cuda_sources
-  cudaImage.cu  
-  cudaImage.h  
-  cudaSiftH.cu 
-  cudaSiftH.h  
-  matching.cu  
-  cudaSiftD.h  
-  cudaSift.h  
-  cudautils.h
+  cudaImage.cu
+  cudaSiftH.cu
+  matching.cu
 )  
+
+set(cuda_headers
+  cudaImage.h
+  cudaSiftH.h
+  cudaSiftD.h
+  cudaSift.h
+  cudautils.h
+)
+
 
 set(sources
   geomFuncs.cpp  
@@ -64,14 +68,17 @@ target_link_libraries(cudasift ${CUDA_cudadevrt_LIBRARY} ${OpenCV_LIBS})
 #  /usr/local/cuda/lib64/libcudadevrt.a ${OpenCV_LIBS} 
 #)
  
-install(FILES 
-  ${cuda_sources} 
-  ${sources}
-  cudaSiftD.cu
-  CMakeLists.txt
-  Copyright.txt
-  DESTINATION .
-)
-install(FILES data/left.pgm data/righ.pgm
-  DESTINATION data
-)
+#install(FILES
+#  ${cuda_sources}
+#  ${sources}
+#  cudaSiftD.cu
+#  CMakeLists.txt
+#  Copyright.txt
+#  DESTINATION .
+#)
+#install(FILES data/left.pgm data/righ.pgm
+#  DESTINATION data
+#)
+
+install(FILES ${cuda_headers} DESTINATION include/CudaSift)
+install(TARGETS cudasift DESTINATION lib/CudaSift)
