@@ -5,6 +5,8 @@
 #ifndef CUDAIMAGE_H
 #define CUDAIMAGE_H
 
+#include <opencv2/core/cuda.hpp>
+
 class CudaImage {
 public:
   int width, height;
@@ -22,6 +24,8 @@ public:
   double Readback();
   double InitTexture();
   double CopyToTexture(CudaImage &dst, bool host);
+
+  CudaImage& operator= (const cv::cuda::GpuMat& gpuMat);
 };
 
 int iDivUp(int a, int b);

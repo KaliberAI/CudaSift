@@ -63,7 +63,7 @@ cuda_add_library(cudasift ${cuda_sources})
 set_target_properties(cudasift PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
 )
-
+target_include_directories(cudasift PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(cudasift ${CUDA_cudadevrt_LIBRARY} ${OpenCV_LIBS})
 #  /usr/local/cuda/lib64/libcudadevrt.a ${OpenCV_LIBS} 
 #)

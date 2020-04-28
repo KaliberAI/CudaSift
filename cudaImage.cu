@@ -12,7 +12,7 @@ int iDivDown(int a, int b) { return a/b; }
 int iAlignUp(int a, int b) { return (a%b != 0) ?  (a - a%b + b) : a; }
 int iAlignDown(int a, int b) { return a - a%b; }
 
-void CudaImage::Allocate(int w, int h, int p, bool host, float *devmem, float *hostmem) 
+void CudaImage::Allocate(int w, int h, int p, bool host, float *devmem, float *hostmem)
 {
   width = w;
   height = h; 
@@ -37,6 +37,20 @@ CudaImage::CudaImage() :
   width(0), height(0), d_data(NULL), h_data(NULL), t_data(NULL), d_internalAlloc(false), h_internalAlloc(false)
 {
 
+}
+
+CudaImage& CudaImage::operator=(const cv::cuda::GpuMat& gpuMat)
+{
+    this->width = gpuMat.cols;
+    this->height = gpuMat.rows;
+    pitch = gpuMat.step / sizeof(float);
+    this->d_data = (float*) gpuMat.data;
+    this->d_internalAlloc = false;
+    this->h_data = NULL;
+    this->h_internalAlloc = false;
+    this->t_data = NULL;
+
+    return *this;
 }
 
 CudaImage::~CudaImage()
