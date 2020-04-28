@@ -140,8 +140,11 @@ void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double init
 #ifdef MANAGEDMEM
   safeCall(cudaDeviceSynchronize());
 #else
-  if (siftData.h_data)
-    safeCall(cudaMemcpyAsync(siftData.h_data, siftData.d_data, sizeof(SiftPoint)*siftData.numPts, cudaMemcpyDeviceToHost, stream));
+  if (siftData.h_data) {
+      if (!siftData.hostAlloc)
+        safeCall(cudaMemcpyAsync(siftData.h_data, siftData.d_data, sizeof(SiftPoint)*siftData.numPts, cudaMemcpyDeviceToHost, stream));
+  }
+
   safeCall(cudaStreamSynchronize(stream));
 #endif
   double totTime = timer.read();
@@ -250,7 +253,7 @@ void InitSiftData(SiftData &data, int num, bool host, bool dev, bool hostAlloc)
   if (host) {
       if (hostAlloc) {
           void* tmp;
-          cudaHostAlloc(&tmp, sz, cudaHostAllocDefault);
+          cudaHostAlloc(&tmp, sz, cudaHostAllocMapped);
           data.h_data = (SiftPoint *)tmp;
           data.hostAlloc =  true;
       } else {
@@ -259,8 +262,14 @@ void InitSiftData(SiftData &data, int num, bool host, bool dev, bool hostAlloc)
   }
 
   data.d_data = NULL;
-  if (dev)
-    safeCall(cudaMalloc((void **)&data.d_data, sz));
+  if (dev) {
+      if (hostAlloc) {
+          safeCall(cudaHostGetDevicePointer(&data.d_data, data.h_data, 0));
+      } else {
+          safeCall(cudaMalloc((void **)&data.d_data, sz));
+      }
+  }
+
 #endif
 }
 
@@ -269,8 +278,11 @@ void FreeSiftData(SiftData &data)
 #ifdef MANAGEDMEM
   safeCall(cudaFree(data.m_data));
 #else
-  if (data.d_data!=NULL)
-    safeCall(cudaFree(data.d_data));
+  if (data.d_data!=NULL) {
+      if(!data.hostAlloc)
+        safeCall(cudaFree(data.d_data));
+  }
+
   data.d_data = NULL;
   if (data.h_data!=NULL) {
       if (data.hostAlloc)
