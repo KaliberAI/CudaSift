@@ -286,7 +286,7 @@ __global__ void FindMaxCorr4(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
 }
 
 
-__device__ void CleanMatches(SiftPoint *sift1, int numPts1)
+__global__ void CleanMatches(SiftPoint *sift1, int numPts1)
 {
   const int p1 = min(blockIdx.x*64 + threadIdx.x, numPts1-1);
   sift1[p1].score = 0.0f;
@@ -300,8 +300,6 @@ __device__ void CleanMatches(SiftPoint *sift1, int numPts1)
 
 __global__ void FindMaxCorr10(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
 {
-    CleanMatches(sift1, numPts1);
-
   __shared__ float4 buffer1[M7W*NDIM/4]; 
   __shared__ float4 buffer2[M7H*NDIM/4];       
   int tx = threadIdx.x;
@@ -1168,6 +1166,7 @@ double MatchSiftData(SiftData &data1, SiftData &data2, cudaStream_t stream)
 #if 1
   dim3 blocksMax3(iDivUp(numPts1, 16), iDivUp(numPts2, 512));
   dim3 threadsMax3(16, 16);
+  CleanMatches<<<iDivUp(numPts1, 64), 64, 0, stream>>>(sift1, numPts1);
   int mode = 10;
   if (mode==5)// K40c 5.0ms, 1080 Ti 1.2ms, 2080 Ti 0.83ms
     FindMaxCorr5<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
