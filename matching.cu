@@ -1087,7 +1087,7 @@ double FindHomography(SiftData &data, float *homography, int *numMatches, int nu
 }
 
 
-double MatchSiftData(SiftData &data1, SiftData &data2)
+double MatchSiftData(SiftData &data1, SiftData &data2, cudaStream_t stream)
 {
   TimerGPU timer(0);
   int numPts1 = data1.numPts;
@@ -1166,7 +1166,7 @@ double MatchSiftData(SiftData &data1, SiftData &data2)
 #if 1
   dim3 blocksMax3(iDivUp(numPts1, 16), iDivUp(numPts2, 512));
   dim3 threadsMax3(16, 16);
-  CleanMatches<<<iDivUp(numPts1, 64), 64>>>(sift1, numPts1);
+  CleanMatches<<<iDivUp(numPts1, 64), 64, 0, stream>>>(sift1, numPts1);
   int mode = 10;
   if (mode==5)// K40c 5.0ms, 1080 Ti 1.2ms, 2080 Ti 0.83ms
     FindMaxCorr5<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
@@ -1186,16 +1186,16 @@ double MatchSiftData(SiftData &data1, SiftData &data2)
   } else if (mode==10) {                 // 2080 Ti 0.24ms
     blocksMax3 = dim3(iDivUp(numPts1, M7W));
     threadsMax3 = dim3(M7W, M7H/M7R);
-    FindMaxCorr10<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
+    FindMaxCorr10<<<blocksMax3, threadsMax3, 0, stream>>>(sift1, sift2, numPts1, numPts2);
   }
-  safeCall(cudaDeviceSynchronize());
+  safeCall(cudaStreamSynchronize(stream));
   checkMsg("FindMaxCorr5() execution failed\n");
 #endif
 
   if (data1.h_data!=NULL) {
     float *h_ptr = &data1.h_data[0].score;
     float *d_ptr = &data1.d_data[0].score;
-    safeCall(cudaMemcpy2D(h_ptr, sizeof(SiftPoint), d_ptr, sizeof(SiftPoint), 5*sizeof(float), data1.numPts, cudaMemcpyDeviceToHost));
+    safeCall(cudaMemcpy2DAsync(h_ptr, sizeof(SiftPoint), d_ptr, sizeof(SiftPoint), 5*sizeof(float), data1.numPts, cudaMemcpyDeviceToHost, stream));
   }
 
   double gpuTime = timer.read();
